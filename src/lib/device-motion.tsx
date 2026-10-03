@@ -8,6 +8,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 
@@ -47,21 +48,23 @@ export function DeviceMotionProvider({
   enabled?: boolean;
   children: ReactNode;
 }) {
-  const hasPermissionApi =
-    typeof window !== "undefined" &&
-    typeof (
-      DeviceOrientationEvent as unknown as {
-        requestPermission?: () => Promise<string>;
-      }
-    ).requestPermission === "function";
-
+  // SSR/hydration: false · after hydrate: real DeviceOrientation permission API
+  const hasPermissionApi = useSyncExternalStore(
+    () => () => {},
+    () =>
+      typeof (
+        DeviceOrientationEvent as unknown as {
+          requestPermission?: () => Promise<string>;
+        }
+      ).requestPermission === "function",
+    () => false,
+  );
   const [listening, setListening] = useState(false);
   const [tilt, setTilt] = useState({ x: 0, y: 0, streaming: false });
   const base = useRef<{ beta: number; gamma: number } | null>(null);
   const smooth = useRef({ x: 0, y: 0 });
   const raf = useRef(0);
 
-  // Derived — avoids setState-in-effect for the iOS permission gate
   const offset = useMemo<MotionOffset>(
     () => ({
       x: tilt.x,

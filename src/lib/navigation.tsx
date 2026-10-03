@@ -7,7 +7,7 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { NAV_ZONES, type ZoneId } from "./zones";
@@ -30,6 +30,7 @@ export function useNavigation() {
 }
 
 const ORDER: ZoneId[] = ["hub", ...NAV_ZONES.map((z) => z.id)];
+const ZONE_EVENT = "dixor-zone";
 
 function isUiTarget(target: EventTarget | null) {
   if (!(target instanceof Element)) return false;
@@ -57,18 +58,39 @@ function isScrollableTarget(target: EventTarget | null) {
   return false;
 }
 
-function zoneFromHash(): ZoneId {
-  if (typeof window === "undefined") return "hub";
+function zoneFromLocation(): ZoneId {
   const hash = window.location.hash.replace("#", "") as ZoneId;
   return ORDER.includes(hash) ? hash : "hub";
 }
 
+function subscribeZone(onStoreChange: () => void) {
+  window.addEventListener("hashchange", onStoreChange);
+  window.addEventListener(ZONE_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener("hashchange", onStoreChange);
+    window.removeEventListener(ZONE_EVENT, onStoreChange);
+  };
+}
+
+function subscribeReducedMotion(onStoreChange: () => void) {
+  const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+  mq.addEventListener("change", onStoreChange);
+  return () => mq.removeEventListener("change", onStoreChange);
+}
+
 export function NavigationProvider({ children }: { children: ReactNode }) {
-  const [active, setActiveState] = useState<ZoneId>(zoneFromHash);
-  const [reducedMotion, setReducedMotion] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  });
+  // useSyncExternalStore: getServerSnapshot during SSR/hydration, then client snapshot
+  const active = useSyncExternalStore(
+    subscribeZone,
+    zoneFromLocation,
+    () => "hub" as ZoneId,
+  );
+  const reducedMotion = useSyncExternalStore(
+    subscribeReducedMotion,
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    () => false,
+  );
+
   const activeRef = useRef(active);
   const lockedUntil = useRef(0);
   const wheelAcc = useRef(0);
@@ -79,10 +101,12 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   }, [active]);
 
   const setActive = useCallback((id: ZoneId) => {
-    setActiveState(id);
-    if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", id === "hub" ? "#" : `#${id}`);
-    }
+    const next =
+      id === "hub"
+        ? `${window.location.pathname}${window.location.search}`
+        : `#${id}`;
+    window.history.replaceState(null, "", next);
+    window.dispatchEvent(new Event(ZONE_EVENT));
   }, []);
 
   const goNext = useCallback(() => {
@@ -115,16 +139,6 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => setReducedMotion(media.matches);
-    media.addEventListener("change", sync);
-
-    const onHash = () => {
-      const hash = window.location.hash.replace("#", "") as ZoneId;
-      if (ORDER.includes(hash)) setActiveState(hash);
-    };
-    window.addEventListener("hashchange", onHash);
-
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         e.preventDefault();
@@ -166,12 +180,10 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
       const dt = performance.now() - touchStart.current.t;
       touchStart.current = null;
 
-      // Prefer dominant axis; allow quick flicks
       if (dt > 900) return;
       if (Math.abs(dy) >= Math.abs(dx) && Math.abs(dy) > 36) {
         stepFromDelta(dy);
       } else if (Math.abs(dx) > 48) {
-        // swipe left → next, swipe right → prev
         stepFromDelta(dx);
       }
     };
@@ -182,8 +194,6 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     window.addEventListener("touchend", onTouchEnd, { passive: true });
 
     return () => {
-      media.removeEventListener("change", sync);
-      window.removeEventListener("hashchange", onHash);
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);
