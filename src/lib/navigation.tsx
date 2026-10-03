@@ -57,9 +57,18 @@ function isScrollableTarget(target: EventTarget | null) {
   return false;
 }
 
+function zoneFromHash(): ZoneId {
+  if (typeof window === "undefined") return "hub";
+  const hash = window.location.hash.replace("#", "") as ZoneId;
+  return ORDER.includes(hash) ? hash : "hub";
+}
+
 export function NavigationProvider({ children }: { children: ReactNode }) {
-  const [active, setActiveState] = useState<ZoneId>("hub");
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const [active, setActiveState] = useState<ZoneId>(zoneFromHash);
+  const [reducedMotion, setReducedMotion] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  });
   const activeRef = useRef(active);
   const lockedUntil = useRef(0);
   const wheelAcc = useRef(0);
@@ -108,11 +117,13 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     const sync = () => setReducedMotion(media.matches);
-    sync();
     media.addEventListener("change", sync);
 
-    const hash = window.location.hash.replace("#", "") as ZoneId;
-    if (ORDER.includes(hash)) setActiveState(hash);
+    const onHash = () => {
+      const hash = window.location.hash.replace("#", "") as ZoneId;
+      if (ORDER.includes(hash)) setActiveState(hash);
+    };
+    window.addEventListener("hashchange", onHash);
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === "ArrowDown") {
@@ -172,6 +183,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
 
     return () => {
       media.removeEventListener("change", sync);
+      window.removeEventListener("hashchange", onHash);
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);

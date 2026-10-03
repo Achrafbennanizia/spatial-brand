@@ -1,8 +1,8 @@
 "use client";
 
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { ContactShadows, Environment, Grid, Stars } from "@react-three/drei";
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useNavigation } from "@/lib/navigation";
 import { useDeviceMotion } from "@/lib/device-motion";
@@ -15,8 +15,8 @@ function CameraRig() {
   const { active, reducedMotion } = useNavigation();
   const { offset } = useDeviceMotion();
   const mobile = useIsMobile();
-  const { camera } = useThree();
   const zone = getZone(active);
+  const fovTarget = mobile ? 48 : 40;
 
   const targetPos = useMemo(() => {
     const [x, y, z] = zone.camera;
@@ -39,16 +39,13 @@ function CameraRig() {
   const goal = useRef(new THREE.Vector3());
   const lookGoal = useRef(new THREE.Vector3());
 
-  useEffect(() => {
-    if (mobile) {
-      (camera as THREE.PerspectiveCamera).fov = 48;
-    } else {
-      (camera as THREE.PerspectiveCamera).fov = 40;
-    }
-    (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
-  }, [mobile, camera]);
-
   useFrame((state, delta) => {
+    const cam = state.camera as THREE.PerspectiveCamera;
+    if (Math.abs(cam.fov - fovTarget) > 0.01) {
+      cam.fov = fovTarget;
+      cam.updateProjectionMatrix();
+    }
+
     if (reducedMotion) {
       state.camera.position.copy(targetPos);
       lookCurrent.current.copy(look);

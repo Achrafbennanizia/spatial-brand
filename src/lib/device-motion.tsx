@@ -47,17 +47,6 @@ export function DeviceMotionProvider({
   enabled?: boolean;
   children: ReactNode;
 }) {
-  const [offset, setOffset] = useState<MotionOffset>({
-    x: 0,
-    y: 0,
-    enabled: false,
-    needsPermission: false,
-  });
-  const [listening, setListening] = useState(false);
-  const base = useRef<{ beta: number; gamma: number } | null>(null);
-  const smooth = useRef({ x: 0, y: 0 });
-  const raf = useRef(0);
-
   const hasPermissionApi =
     typeof window !== "undefined" &&
     typeof (
@@ -66,13 +55,26 @@ export function DeviceMotionProvider({
       }
     ).requestPermission === "function";
 
+  const [listening, setListening] = useState(false);
+  const [tilt, setTilt] = useState({ x: 0, y: 0, streaming: false });
+  const base = useRef<{ beta: number; gamma: number } | null>(null);
+  const smooth = useRef({ x: 0, y: 0 });
+  const raf = useRef(0);
+
+  // Derived — avoids setState-in-effect for the iOS permission gate
+  const offset = useMemo<MotionOffset>(
+    () => ({
+      x: tilt.x,
+      y: tilt.y,
+      enabled: enabled && tilt.streaming && (!hasPermissionApi || listening),
+      needsPermission: enabled && hasPermissionApi && !listening,
+    }),
+    [tilt.x, tilt.y, tilt.streaming, enabled, hasPermissionApi, listening],
+  );
+
   useEffect(() => {
     if (!enabled) return;
-
-    if (hasPermissionApi && !listening) {
-      setOffset((o) => ({ ...o, needsPermission: true, enabled: false }));
-      return;
-    }
+    if (hasPermissionApi && !listening) return;
 
     const onOrient = (e: DeviceOrientationEvent) => {
       if (e.beta == null || e.gamma == null) return;
@@ -83,20 +85,15 @@ export function DeviceMotionProvider({
       raf.current = requestAnimationFrame(() => {
         smooth.current.x += (dg - smooth.current.x) * 0.14;
         smooth.current.y += (db - smooth.current.y) * 0.14;
-        setOffset({
+        setTilt({
           x: smooth.current.x,
           y: smooth.current.y,
-          enabled: true,
-          needsPermission: false,
+          streaming: true,
         });
       });
     };
 
     window.addEventListener("deviceorientation", onOrient, true);
-    // Non-iOS: try listening immediately
-    if (!hasPermissionApi) {
-      setOffset((o) => ({ ...o, enabled: true, needsPermission: false }));
-    }
 
     return () => {
       window.removeEventListener("deviceorientation", onOrient, true);
@@ -114,17 +111,10 @@ export function DeviceMotionProvider({
         if (result === "granted") {
           base.current = null;
           setListening(true);
-          setOffset((o) => ({
-            ...o,
-            enabled: true,
-            needsPermission: false,
-          }));
           return true;
         }
-        setOffset((o) => ({ ...o, needsPermission: false, enabled: false }));
         return false;
       } catch {
-        setOffset((o) => ({ ...o, needsPermission: false, enabled: false }));
         return false;
       }
     }
@@ -135,7 +125,7 @@ export function DeviceMotionProvider({
   const recalibrate = useCallback(() => {
     base.current = null;
     smooth.current = { x: 0, y: 0 };
-    setOffset((o) => ({ ...o, x: 0, y: 0 }));
+    setTilt((t) => ({ ...t, x: 0, y: 0 }));
   }, []);
 
   const value = useMemo(
