@@ -21,14 +21,21 @@ export function ZonePanel() {
         }
       >
         {!mobile && (
-          <div
-            className="absolute inset-0 bg-[linear-gradient(90deg,rgba(6,16,24,0.88)_0%,rgba(6,16,24,0.55)_55%,transparent_100%)]"
-            aria-hidden
-          />
+          <>
+            {/* Dense left veil so floor rings / metal can't wash out type */}
+            <div
+              className="absolute inset-0 bg-[linear-gradient(90deg,rgba(4,6,10,0.96)_0%,rgba(4,6,10,0.88)_38%,rgba(4,6,10,0.55)_68%,transparent_100%)]"
+              aria-hidden
+            />
+            <div
+              className="absolute inset-y-0 left-0 w-[85%] bg-[radial-gradient(ellipse_80%_70%_at_0%_50%,rgba(0,0,0,0.72)_0%,transparent_70%)]"
+              aria-hidden
+            />
+          </>
         )}
         {mobile && (
           <div
-            className="absolute inset-x-0 bottom-0 top-auto h-[min(52vh,420px)] bg-[linear-gradient(180deg,transparent_0%,rgba(4,10,16,0.55)_28%,rgba(4,10,16,0.92)_70%)]"
+            className="absolute inset-x-0 bottom-0 top-auto h-[min(52vh,420px)] bg-[linear-gradient(180deg,transparent_0%,rgba(4,6,10,0.7)_22%,rgba(4,6,10,0.96)_68%)]"
             aria-hidden
           />
         )}
@@ -61,11 +68,11 @@ export function ZonePanel() {
               transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
               className={`pointer-events-auto ${mobile ? "max-w-none" : "max-w-md"}`}
             >
-              <p className="text-[10px] font-semibold tracking-[0.28em] text-signal sm:text-[11px]">
+              <p className="copy-legible text-[10px] font-semibold tracking-[0.28em] text-signal sm:text-[11px]">
                 {zone.eyebrow}
               </p>
               <h1
-                className={`display mt-2 leading-[1.08] text-foam ${
+                className={`display copy-legible-title mt-2 leading-[1.08] text-foam ${
                   mobile
                     ? "text-[1.55rem] max-[380px]:text-[1.35rem]"
                     : "mt-3 text-[2.65rem]"
@@ -74,7 +81,7 @@ export function ZonePanel() {
                 {zone.title}
               </h1>
               <p
-                className={`mt-2.5 text-sm leading-relaxed text-muted ${
+                className={`copy-legible-muted mt-2.5 text-sm leading-relaxed text-[#d4d0c8] ${
                   mobile ? "line-clamp-3 max-w-none" : "mt-4 max-w-sm md:text-[0.95rem]"
                 }`}
               >
@@ -82,16 +89,16 @@ export function ZonePanel() {
               </p>
 
               {!mobile && (
-                <dl className="mt-6 grid gap-2.5 border-l border-signal/40 pl-4">
+                <dl className="mt-6 grid gap-2.5 border-l border-signal/50 pl-4">
                   {zone.points.map((point) => (
                     <div
                       key={point.label}
                       className="grid grid-cols-[7rem_1fr] gap-3 text-sm"
                     >
-                      <dt className="tracking-[0.1em] text-muted">
+                      <dt className="copy-legible-muted tracking-[0.1em] text-[#c8c4bc]">
                         {point.label}
                       </dt>
-                      <dd className="text-foam">{point.value}</dd>
+                      <dd className="copy-legible text-foam">{point.value}</dd>
                     </div>
                   ))}
                 </dl>
@@ -104,10 +111,12 @@ export function ZonePanel() {
                       key={point.label}
                       className="min-w-[7.5rem] shrink-0 border-l border-signal/35 pl-2.5"
                     >
-                      <p className="text-[10px] tracking-[0.14em] text-muted">
+                      <p className="copy-legible-muted text-[10px] tracking-[0.14em] text-[#c8c4bc]">
                         {point.label}
                       </p>
-                      <p className="mt-0.5 text-xs text-foam">{point.value}</p>
+                      <p className="copy-legible mt-0.5 text-xs text-foam">
+                        {point.value}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -121,7 +130,7 @@ export function ZonePanel() {
                 {zone.cta.href.startsWith("#") ? (
                   <button
                     type="button"
-                    className="btn-signal min-h-11 touch-manipulation"
+                    className="btn-signal min-h-11 touch-manipulation shadow-[0_8px_28px_rgba(0,0,0,0.55)]"
                     onClick={() =>
                       setActive(zone.cta.href.replace("#", "") as ZoneId)
                     }
@@ -131,7 +140,7 @@ export function ZonePanel() {
                 ) : (
                   <a
                     href={zone.cta.href}
-                    className="btn-signal min-h-11 touch-manipulation"
+                    className="btn-signal min-h-11 touch-manipulation shadow-[0_8px_28px_rgba(0,0,0,0.55)]"
                   >
                     {zone.cta.label}
                   </a>
@@ -139,7 +148,7 @@ export function ZonePanel() {
                 {active !== "hub" && (
                   <button
                     type="button"
-                    className="min-h-11 px-1 text-xs tracking-[0.16em] text-muted underline-offset-4 touch-manipulation transition hover:text-foam hover:underline"
+                    className="copy-legible-muted min-h-11 px-1 text-xs tracking-[0.16em] text-[#d4d0c8] underline-offset-4 touch-manipulation transition hover:text-foam hover:underline"
                     onClick={() => setActive("hub")}
                   >
                     ← Studio
