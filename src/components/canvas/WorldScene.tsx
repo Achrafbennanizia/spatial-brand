@@ -2,14 +2,40 @@
 
 import { Canvas, useFrame } from "@react-three/fiber";
 import { ContactShadows, Environment, Grid, Stars } from "@react-three/drei";
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useNavigation } from "@/lib/navigation";
 import { useDeviceMotion } from "@/lib/device-motion";
 import { useIsMobile } from "@/lib/media";
+import { useBoot } from "@/lib/boot";
 import { getZone, ZONES } from "@/lib/zones";
 import { MaterialsProvider, ZoneStructure } from "./ZoneStructures";
 import { createHorizonTexture, createOpsFloorSet } from "@/lib/materials";
+
+/** Drives the full-page boot loader until the first painted frames settle. */
+function BootSignal() {
+  const { setProgress, markReady, ready } = useBoot();
+  const frames = useRef(0);
+  const done = useRef(false);
+
+  useEffect(() => {
+    setProgress(42);
+  }, [setProgress]);
+
+  useFrame(() => {
+    if (done.current || ready) return;
+    frames.current += 1;
+    if (frames.current === 2) setProgress(62);
+    if (frames.current === 14) setProgress(84);
+    if (frames.current === 30) setProgress(96);
+    if (frames.current >= 48) {
+      done.current = true;
+      markReady();
+    }
+  });
+
+  return null;
+}
 
 function CameraRig() {
   const { active, reducedMotion } = useNavigation();
@@ -399,12 +425,18 @@ function SceneContents() {
         color="#020608"
       />
       <CameraRig />
+      <BootSignal />
     </>
   );
 }
 
 export function WorldScene() {
   const mobile = useIsMobile();
+  const { setProgress } = useBoot();
+
+  useEffect(() => {
+    setProgress(28);
+  }, [setProgress]);
 
   return (
     <div className="fixed inset-0 z-[1] touch-none">
@@ -418,6 +450,7 @@ export function WorldScene() {
           powerPreference: mobile ? "low-power" : "high-performance",
         }}
         shadows={!mobile}
+        onCreated={() => setProgress(50)}
         onPointerMissed={() => {
           document.body.style.cursor = "auto";
         }}
