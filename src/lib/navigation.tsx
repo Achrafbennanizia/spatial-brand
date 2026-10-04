@@ -125,12 +125,13 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
       if (now < lockedUntil.current) return;
 
       wheelAcc.current += delta;
-      const threshold = 42;
+      // Higher threshold + longer lock reduces accidental multi-zone jumps
+      const threshold = 70;
       if (Math.abs(wheelAcc.current) < threshold) return;
 
       const dir = wheelAcc.current > 0 ? 1 : -1;
       wheelAcc.current = 0;
-      lockedUntil.current = now + (reducedMotion ? 180 : 650);
+      lockedUntil.current = now + (reducedMotion ? 220 : 820);
 
       if (dir > 0) goNext();
       else goPrev();
@@ -157,8 +158,11 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
 
     const onWheel = (e: WheelEvent) => {
       if (isScrollableTarget(e.target) || isUiTarget(e.target)) return;
+      // Ignore tiny trackpad noise; only lock the gesture when we may step
+      const delta = e.deltaY + e.deltaX * 0.35;
+      if (Math.abs(delta) < 1.5 && Math.abs(wheelAcc.current) < 8) return;
       e.preventDefault();
-      stepFromDelta(e.deltaY + e.deltaX * 0.35);
+      stepFromDelta(delta);
     };
 
     const onTouchStart = (e: TouchEvent) => {

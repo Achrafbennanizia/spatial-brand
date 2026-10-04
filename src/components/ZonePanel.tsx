@@ -43,7 +43,7 @@ export function ZonePanel() {
         <div
           className={
             mobile
-              ? "relative px-4 pb-3 pt-8"
+              ? "relative flex min-h-[min(48vh,380px)] flex-col justify-center px-4 pb-3 pt-6"
               : "relative flex h-full flex-col justify-center px-10"
           }
         >

@@ -17,12 +17,12 @@ export function Chrome() {
         <button
           type="button"
           onClick={() => setActive("hub")}
-          className="min-h-11 touch-manipulation text-left"
+          className="nav-brand min-h-11 touch-manipulation text-left"
         >
           <span className="display block text-xs tracking-[0.22em] text-foam sm:text-sm">
             DIXOR
           </span>
-          <span className="mt-1 block text-[10px] tracking-[0.2em] text-muted">
+          <span className="mt-1 block text-[10px] tracking-[0.2em] text-muted transition-colors">
             {active === "hub" ? "CREATIVE STUDIO" : "IN ROOM"}
           </span>
         </button>
@@ -40,9 +40,9 @@ export function Chrome() {
                 key={id}
                 type="button"
                 onClick={() => setActive(id)}
-                className={`min-h-8 min-w-8 touch-manipulation items-center justify-center transition-all sm:min-h-0 sm:min-w-0 ${
+                className={`nav-step min-h-8 min-w-8 touch-manipulation items-center justify-center sm:min-h-0 sm:min-w-0 ${
                   active === id
-                    ? "flex after:block after:h-1.5 after:w-5 after:bg-signal"
+                    ? "nav-step--active flex after:block after:h-1.5 after:w-5 after:bg-signal"
                     : "flex after:block after:h-1.5 after:w-1.5 after:bg-foam/25"
                 }`}
                 aria-label={id === "hub" ? "Hub" : id}
