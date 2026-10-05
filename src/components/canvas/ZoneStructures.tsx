@@ -67,9 +67,10 @@ function HitPad({
 function StudioMark({ active }: { active: boolean }) {
   const maps = useMaps();
   const group = useRef<THREE.Group>(null);
+  const { reducedMotion } = useNavigation();
 
   useFrame((state) => {
-    if (!group.current) return;
+    if (!group.current || reducedMotion) return;
     group.current.rotation.y = state.clock.elapsedTime * 0.2;
   });
 
@@ -304,6 +305,7 @@ function createServiceCardBackTexture(card: (typeof SERVICE_FLOATS)[number]) {
 /** Services — laptop + floating offer cards (content reveals when selected). */
 function ServiceLaptop({ active }: { active: boolean }) {
   const maps = useMaps();
+  const { reducedMotion } = useNavigation();
   const cards = useRef<THREE.Group>(null);
   const flips = useRef<(THREE.Group | null)[]>([]);
   const flipAmt = useRef(0);
@@ -324,16 +326,19 @@ function ServiceLaptop({ active }: { active: boolean }) {
   }, []);
 
   useFrame((state, delta) => {
-    if (cards.current) {
-      // Subtle drift — stays locked to the laptop composition
+    if (cards.current && !reducedMotion) {
       cards.current.position.y =
         0.95 + Math.sin(state.clock.elapsedTime * 1.1) * 0.025;
       cards.current.rotation.y =
         Math.sin(state.clock.elapsedTime * 0.35) * 0.04;
     }
     const target = active ? Math.PI : 0;
-    const k = 1 - Math.exp(-delta * 5.5);
-    flipAmt.current += (target - flipAmt.current) * k;
+    if (reducedMotion) {
+      flipAmt.current = target;
+    } else {
+      const k = 1 - Math.exp(-delta * 5.5);
+      flipAmt.current += (target - flipAmt.current) * k;
+    }
     flips.current.forEach((g) => {
       if (g) g.rotation.y = flipAmt.current;
     });
@@ -507,6 +512,7 @@ function createCaseCardTexture(card: (typeof CASE_CARDS)[number]) {
 /** Work — portfolio frames that flip 180° when the zone is selected. */
 function WorkGallery({ active }: { active: boolean }) {
   const maps = useMaps();
+  const { reducedMotion } = useNavigation();
   const sway = useRef<THREE.Group>(null);
   const flips = useRef<(THREE.Group | null)[]>([]);
   const lifts = useRef<(THREE.Group | null)[]>([]);
@@ -520,13 +526,16 @@ function WorkGallery({ active }: { active: boolean }) {
   }, []);
 
   useFrame((state, delta) => {
-    if (sway.current) {
+    if (sway.current && !reducedMotion) {
       sway.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.25) * 0.1;
     }
-    // Ease toward 180° (π) when selected, else 0
     const target = active ? Math.PI : 0;
-    const k = 1 - Math.exp(-delta * 5.5);
-    flipAmt.current += (target - flipAmt.current) * k;
+    if (reducedMotion) {
+      flipAmt.current = target;
+    } else {
+      const k = 1 - Math.exp(-delta * 5.5);
+      flipAmt.current += (target - flipAmt.current) * k;
+    }
     flips.current.forEach((g) => {
       if (g) g.rotation.y = flipAmt.current;
     });
@@ -646,9 +655,10 @@ function WorkGallery({ active }: { active: boolean }) {
 function ClientMetrics({ active }: { active: boolean }) {
   const maps = useMaps();
   const bars = useRef<THREE.Group>(null);
+  const { reducedMotion } = useNavigation();
 
   useFrame((state) => {
-    if (!bars.current) return;
+    if (!bars.current || reducedMotion) return;
     bars.current.children.forEach((child, i) => {
       const pulse = 0.92 + Math.sin(state.clock.elapsedTime * 1.5 + i) * 0.04;
       child.scale.y = pulse;
@@ -825,6 +835,7 @@ function createSprintBoardTexture() {
 
 /** Team — Design / Eng / Producer workstations on one desk. */
 function TeamDesk({ active }: { active: boolean }) {
+  const { reducedMotion } = useNavigation();
   const maps = useMaps();
   const bob = useRef<THREE.Group>(null);
 
@@ -842,10 +853,8 @@ function TeamDesk({ active }: { active: boolean }) {
   }, []);
 
   useFrame((state) => {
-    if (bob.current) {
-      bob.current.position.y =
-        Math.sin(state.clock.elapsedTime * 1.15) * 0.02;
-    }
+    if (!bob.current || reducedMotion) return;
+    bob.current.position.y = Math.sin(state.clock.elapsedTime * 1.15) * 0.02;
   });
 
   return (

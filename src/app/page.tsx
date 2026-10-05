@@ -13,7 +13,7 @@ function StudioShell() {
   const { ready, progress } = useBoot();
 
   return (
-    <>
+    <main id="main" tabIndex={-1}>
       <BootLoader ready={ready} progress={progress} />
       <div className="atmosphere" aria-hidden />
       <WorldCanvas />
@@ -24,7 +24,7 @@ function StudioShell() {
           <MotionPrompt />
         </>
       )}
-    </>
+    </main>
   );
 }
 

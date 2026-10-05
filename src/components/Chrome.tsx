@@ -7,7 +7,7 @@ import { NAV_ZONES } from "@/lib/zones";
 const STEPS = ["hub", ...NAV_ZONES.map((z) => z.id)] as const;
 
 export function Chrome() {
-  const { active, setActive, progress } = useNavigation();
+  const { active, setActive, progress, paused, togglePause } = useNavigation();
   const mobile = useIsMobile();
   const index = Math.max(0, STEPS.indexOf(active));
 
@@ -20,7 +20,7 @@ export function Chrome() {
           className="nav-brand min-h-11 touch-manipulation text-left"
         >
           <span className="display block text-xs tracking-[0.22em] text-foam sm:text-sm">
-            DIXOR
+            <span translate="no">DIXOR</span>
           </span>
           <span className="mt-1 block text-[10px] tracking-[0.2em] text-muted transition-colors">
             {active === "hub" ? "CREATIVE STUDIO" : "IN ROOM"}
@@ -49,6 +49,14 @@ export function Chrome() {
               />
             ))}
           </div>
+          <button
+            type="button"
+            onClick={togglePause}
+            aria-pressed={paused}
+            className="mt-2 min-h-11 rounded-full border border-line px-3 text-[10px] tracking-[0.16em] text-foam uppercase"
+          >
+            {paused ? "Play motion" : "Pause motion"}
+          </button>
           <div className="mt-0.5 h-px w-14 overflow-hidden bg-line sm:w-16">
             <div
               className="h-full bg-signal transition-[width] duration-500 ease-out"

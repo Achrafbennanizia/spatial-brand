@@ -7,6 +7,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
@@ -15,6 +16,8 @@ import { NAV_ZONES, type ZoneId } from "./zones";
 type NavigationContextValue = {
   active: ZoneId;
   reducedMotion: boolean;
+  paused: boolean;
+  togglePause: () => void;
   setActive: (id: ZoneId) => void;
   goNext: () => void;
   goPrev: () => void;
@@ -85,11 +88,14 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     zoneFromLocation,
     () => "hub" as ZoneId,
   );
-  const reducedMotion = useSyncExternalStore(
+  const systemReduced = useSyncExternalStore(
     subscribeReducedMotion,
     () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     () => false,
   );
+  const [paused, setPaused] = useState(false);
+  const reducedMotion = systemReduced || paused;
+  const togglePause = useCallback(() => setPaused((value) => !value), []);
 
   const activeRef = useRef(active);
   const lockedUntil = useRef(0);
@@ -208,8 +214,17 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const progress = ORDER.indexOf(active) / Math.max(1, ORDER.length - 1);
 
   const value = useMemo(
-    () => ({ active, reducedMotion, setActive, goNext, goPrev, progress }),
-    [active, reducedMotion, setActive, goNext, goPrev, progress],
+    () => ({
+      active,
+      reducedMotion,
+      paused,
+      togglePause,
+      setActive,
+      goNext,
+      goPrev,
+      progress,
+    }),
+    [active, reducedMotion, paused, togglePause, setActive, goNext, goPrev, progress],
   );
 
   return (
